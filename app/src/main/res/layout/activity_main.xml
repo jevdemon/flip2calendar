@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#000000">
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#111111">
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:maxLines="2"
+            android:singleLine="false"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Calendar"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvHolidayToggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Holidays: ON"
+            android:textColor="#AAAAAA"
+            android:textSize="16sp"
+            android:paddingStart="8dp"
+            android:focusable="true"
+            android:clickable="true" />
+
+        <TextView
+            android:id="@+id/tvNewEvent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+ New"
+            android:textColor="#4a9aff"
+            android:textSize="16sp"
+            android:paddingStart="8dp"
+            android:focusable="true"
+            android:clickable="true" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Loading..."
+        android:textColor="#AAAAAA"
+        android:textSize="16sp"
+        android:padding="8dp"
+        android:visibility="visible" />
+
+    <ListView
+        android:id="@+id/listView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="#222222"
+        android:dividerHeight="1dp"
+        android:scrollbars="vertical"
+        android:focusable="true"
+        android:drawSelectorOnTop="false"
+        android:listSelector="@drawable/list_item_selector"
+        android:focusableInTouchMode="true" />
+
+</LinearLayout>

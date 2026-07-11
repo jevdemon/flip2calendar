@@ -1,0 +1,24 @@
+# OAuth credentials JSON download
+client_secret*.json
+
+# Credentials — never commit these
+secrets.properties
+
+# Android
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.keystore
+!debug.keystore
+
+# App build outputs
+app/build/
+
+# Google Services
+google-services.json
