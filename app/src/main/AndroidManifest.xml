@@ -50,6 +50,11 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".SetupActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <receiver
             android:name=".ReminderReceiver"
             android:exported="false" />

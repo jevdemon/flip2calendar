@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#111111">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Welcome to Flip2Calendar"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="To use this app you need to create your own Google OAuth credentials. This is a one-time setup."
+            android:textColor="#CCCCCC"
+            android:textSize="16sp"
+            android:layout_marginBottom="24dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Step 1: Create a Google Cloud project"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Go to console.cloud.google.com, create a new project, enable the Google Calendar API, and create a Web Application OAuth client with http://localhost as the redirect URI."
+            android:textColor="#CCCCCC"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="See the full setup guide at:"
+            android:textColor="#CCCCCC"
+            android:textSize="14sp"/>
+
+        <TextView
+            android:id="@+id/tvSetupLink"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="github.com/jevdemon/flip2calendar"
+            android:textColor="#4a9aff"
+            android:textSize="14sp"
+            android:layout_marginBottom="24dp"
+            android:clickable="true"
+            android:focusable="true"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Step 2: Enter your credentials"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Client ID"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+
+        <EditText
+            android:id="@+id/etClientId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#AAAAAA"
+            android:hint="xxxxxxxxxxxx.apps.googleusercontent.com"
+            android:backgroundTint="#555555"
+            android:textSize="14sp"
+            android:inputType="text"
+            android:padding="8dp"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Client Secret"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+
+        <EditText
+            android:id="@+id/etClientSecret"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#AAAAAA"
+            android:hint="GOCSPX-..."
+            android:backgroundTint="#555555"
+            android:textSize="14sp"
+            android:inputType="textPassword"
+            android:padding="8dp"
+            android:layout_marginBottom="24dp"/>
+
+        <Button
+            android:id="@+id/btnSaveCredentials"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save and Continue"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:backgroundTint="#2a4a7a"/>
+
+    </LinearLayout>
+
+</ScrollView>

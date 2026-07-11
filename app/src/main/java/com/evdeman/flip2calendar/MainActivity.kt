@@ -1,6 +1,4 @@
 package com.evdeman.flip2calendar
-import com.evdeman.flip2calendar.BuildConfig
-import android.accounts.Account
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -53,14 +51,24 @@ sealed class ListItem {
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        const val CLIENT_ID = BuildConfig.GOOGLE_CLIENT_ID
-        const val CLIENT_SECRET = BuildConfig.GOOGLE_CLIENT_SECRET
         const val REDIRECT_URI = "http://localhost"
         const val SCOPE = "https://www.googleapis.com/auth/calendar"
         const val PREFS_NAME = "flip2cal_prefs"
         const val KEY_ACCESS_TOKEN = "access_token"
         const val KEY_REFRESH_TOKEN = "refresh_token"
         const val KEY_SHOW_HOLIDAYS = "show_holidays"
+        const val KEY_CLIENT_ID = "client_id"
+        const val KEY_CLIENT_SECRET = "client_secret"
+
+        fun getClientId(context: android.content.Context): String {
+            val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+            return prefs.getString(KEY_CLIENT_ID, "") ?: ""
+        }
+
+        fun getClientSecret(context: android.content.Context): String {
+            val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+            return prefs.getString(KEY_CLIENT_SECRET, "") ?: ""
+        }
     }
 
     private lateinit var listView: ListView
@@ -74,6 +82,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Redirect to setup if credentials not configured
+        val storedClientId = getClientId(this)
+        if (storedClientId.isEmpty()) {
+            startActivity(Intent(this, SetupActivity::class.java))
+            finish()
+            return
+        }
         setContentView(R.layout.activity_main)
         listView = findViewById(R.id.listView)
         listView.itemsCanFocus = false
@@ -152,7 +167,7 @@ class MainActivity : AppCompatActivity() {
         tvStatus.text = "Opening browser for Google sign-in..."
         val authUrl = Uri.parse("https://accounts.google.com/o/oauth2/v2/auth")
             .buildUpon()
-            .appendQueryParameter("client_id", CLIENT_ID)
+            .appendQueryParameter("client_id", getClientId(this))
             .appendQueryParameter("redirect_uri", REDIRECT_URI)
             .appendQueryParameter("response_type", "code")
             .appendQueryParameter("scope", SCOPE)
@@ -187,8 +202,8 @@ class MainActivity : AppCompatActivity() {
                     conn.doOutput = true
                     conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
                     val body = "code=$code" +
-                            "&client_id=$CLIENT_ID" +
-                            "&client_secret=$CLIENT_SECRET" +
+                            "&client_id=${getClientId(this@MainActivity)}" +
+                            "&client_secret=${getClientSecret(this@MainActivity)}" +
                             "&redirect_uri=${Uri.encode(REDIRECT_URI)}" +
                             "&grant_type=authorization_code"
                     conn.outputStream.write(body.toByteArray())
@@ -324,8 +339,8 @@ class MainActivity : AppCompatActivity() {
                     conn.doOutput = true
                     conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
                     val body = "refresh_token=$refreshToken" +
-                            "&client_id=$CLIENT_ID" +
-                            "&client_secret=$CLIENT_SECRET" +
+                            "&client_id=${getClientId(this@MainActivity)}" +
+                            "&client_secret=${getClientSecret(this@MainActivity)}" +
                             "&grant_type=refresh_token"
                     conn.outputStream.write(body.toByteArray())
                     val response = conn.inputStream.bufferedReader().readText()
