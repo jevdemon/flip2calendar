@@ -3,6 +3,12 @@
 A native Android calendar app built for the **TCL Flip 2** running jailbroken AOSP 11.
 Syncs with Google Calendar via the REST API — no Google Play Services required, no WebView dependency, fully D-pad navigable.
 
+You can get the app (APK) here: https://github.com/jevdemon/flip2calendar/releases/tag/v1.0
+
+Before using the app you’ll seen to setup Google OAuth for your account – follow the instructions here: https://github.com/jevdemon/flip2calendar/blob/main/README.md#google-oauth-setup-required
+
+NOTE: If you need to jailbreak your TCL FLip 2 I suggest consulting one of the many online guides such as this one: https://docs.google.com/document/d/1-MIkXxDkNXKJvHGgAItGbsWlFX1xQ2j5q-o0eOtPYNk/mobilebasic and https://github.com/neutronscott/flip2/wiki.
+
 ## Why This Exists
 
 Most calendar apps on Android require Google Play Services or an up-to-date WebView. The TCL Flip 2 runs stripped AOSP 11 (32-bit) with neither. This app was built from scratch to fill that gap.
