@@ -27,7 +27,44 @@ It should also work on any de-Googled Android device running API 30+.
 
 ## Screenshots
 
-<!-- Add screenshots here -->
+Scroll to View Events using the D-pad (or use a virtual mouse):<br/>
+<img width="598" height="753" alt="Untitled" src="https://github.com/user-attachments/assets/b715c510-fa30-4f8e-b4ff-cb24fdab3960" /><p/>
+Click on an Event using the D-pad (or use a virtual mouse) to view details:<br/>
+<img width="598" height="754" alt="Untitled2" src="https://github.com/user-attachments/assets/82eccc9b-f926-46fe-a506-1afd17f8cc73" /><p/>
+Editing an existing Event, optionally set to All Day and schedule alerts:<br/>
+(scroll up and down to view or set more properties using D-Pad, type from keyboard or use voice dictation is you installed Google Voice on your phone)<br/>
+<img width="598" height="754" alt="Untitled3" src="https://github.com/user-attachments/assets/2d603dd3-a34c-41ec-928f-be2e345ac314" /><br/>
+<img width="598" height="754" alt="Untitled4" src="https://github.com/user-attachments/assets/e84ee1df-335c-4ba2-9a58-8c91e0536a28" /><br/>
+<img width="618" height="756" alt="Untitled5" src="https://github.com/user-attachments/assets/2a36214f-034e-493f-897c-8a1da4147bf3" /><br/>
+<img width="612" height="756" alt="Untitled6" src="https://github.com/user-attachments/assets/b7db818c-391c-472c-9db4-8f792336d435" /><br/>
+<img width="612" height="756" alt="Untitled7" src="https://github.com/user-attachments/assets/f5a448e9-eda8-4f7e-a6c4-bc59ae81eee6" /><br/>
+<img width="612" height="756" alt="Untitled8" src="https://github.com/user-attachments/assets/734b6289-8f20-418b-8871-34cb244b2ca5" /><br/>
+<img width="589" height="756" alt="Untitled9" src="https://github.com/user-attachments/assets/8487189f-b114-4001-bc2c-184a9a2479c3" /><br/>
+<p>&nbsp;</p>
+Create A New Event:<br/>
+<img width="601" height="757" alt="Untitled10" src="https://github.com/user-attachments/assets/89a4730f-e8a4-42af-a913-f8c651e7879f" /><br/>
+<img width="601" height="757" alt="Untitled11" src="https://github.com/user-attachments/assets/83a40e1b-e828-4aa1-97de-c5b61ac8ed76" /><br/>
+<img width="601" height="757" alt="Untitled12" src="https://github.com/user-attachments/assets/78af96ea-ba07-420c-b058-1ab5aa7d48ec" /><br/>
+<p>&nbsp;</p>
+Optionally show Holidays:<br/>
+<img width="601" height="757" alt="Untitled13" src="https://github.com/user-attachments/assets/0533457c-49ce-482d-89c5-93a90eeb8aed" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Requirements
 
