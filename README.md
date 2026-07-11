@@ -5,7 +5,7 @@ Syncs with Google Calendar via the REST API — no Google Play Services required
 
 You can get the app (APK) here: https://github.com/jevdemon/flip2calendar/releases/tag/v1.0
 
-Before using the app you’ll seen to setup Google OAuth for your account – follow the instructions here: https://github.com/jevdemon/flip2calendar/blob/main/README.md#google-oauth-setup-required
+Before using the app you’ll need to setup Google OAuth for your account – follow the instructions here: https://github.com/jevdemon/flip2calendar/blob/main/README.md#google-oauth-setup-required
 
 NOTE: If you need to jailbreak your TCL FLip 2 I suggest consulting one of the many online guides such as this one: https://docs.google.com/document/d/1-MIkXxDkNXKJvHGgAItGbsWlFX1xQ2j5q-o0eOtPYNk/mobilebasic and https://github.com/neutronscott/flip2/wiki.
 
