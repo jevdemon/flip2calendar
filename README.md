@@ -1,7 +1,9 @@
 # Flip2Calendar
 
-A native Android calendar app built for the **TCL Flip 2** running jailbroken AOSP 11. Should work fine on other flip phones as long as they jailbroken and running AOSP 11. This app will not work on flip phones running KaiOS.
-Syncs with Google Calendar via the REST API — no Google Play Services required, no WebView dependency, fully D-pad navigable.
+A native Android calendar app built for the **TCL Flip 2** running jailbroken AOSP 11. 
+<br/>Syncs with Google Calendar via the REST API — no Google Play Services required, no WebView dependency, fully D-pad navigable.
+<br/>This app should work fine on other flip phones as long as they jailbroken and running AOSP 11. 
+<br/>NOTE This app will not work on flip phones running KaiOS.
 
 You can get the app (APK) here: https://github.com/jevdemon/flip2calendar/releases/tag/v1.1
 <br/>Version 1.1 adds a new Options screen and fixes a few bugs. See https://github.com/jevdemon/flip2calendar/releases
