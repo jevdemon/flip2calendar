@@ -59,6 +59,9 @@ class MainActivity : AppCompatActivity() {
         const val KEY_SHOW_HOLIDAYS = "show_holidays"
         const val KEY_CLIENT_ID = "client_id"
         const val KEY_CLIENT_SECRET = "client_secret"
+        const val KEY_HIDE_FUTURE = "hide_future"
+        const val KEY_DAYS_AHEAD = "days_ahead"
+        const val DEFAULT_DAYS_AHEAD = 7
 
         fun getClientId(context: android.content.Context): String {
             val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
@@ -73,11 +76,20 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var listView: ListView
     private lateinit var tvStatus: TextView
-    private lateinit var tvHolidayToggle: TextView
     private lateinit var prefs: SharedPreferences
     private lateinit var tvNewEvent: TextView
-    private var showHolidays = false
-    private var allEvents = listOf<CalendarEvent>()
+    private lateinit var tvOptions: TextView
+    private val optionsLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val accessToken = prefs.getString(KEY_ACCESS_TOKEN, null)
+            if (accessToken != null) {
+                fetchCalendarEvents(accessToken)
+            }
+        }
+    }
+    private var allEvents = mutableListOf<CalendarEvent>()
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,19 +106,9 @@ class MainActivity : AppCompatActivity() {
         listView.itemsCanFocus = false
         listView.choiceMode = ListView.CHOICE_MODE_SINGLE
         tvStatus = findViewById(R.id.tvStatus)
-        tvHolidayToggle = findViewById(R.id.tvHolidayToggle)
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        showHolidays = prefs.getBoolean(KEY_SHOW_HOLIDAYS, false)
-        updateHolidayToggleText()
         updateTitle()
-
-        tvHolidayToggle.setOnClickListener {
-            showHolidays = !showHolidays
-            prefs.edit().putBoolean(KEY_SHOW_HOLIDAYS, showHolidays).apply()
-            updateHolidayToggleText()
-            renderEvents()
-        }
 
         tvNewEvent = findViewById(R.id.tvNewEvent)
         tvNewEvent.setOnClickListener {
@@ -129,6 +131,25 @@ class MainActivity : AppCompatActivity() {
             } else todayDateStr()
             EventEditActivity.startForNew(this, dateStr)
         }
+        tvNewEvent.setOnFocusChangeListener { _, hasFocus ->
+            tvNewEvent.setTextColor(if (hasFocus) Color.WHITE else Color.parseColor("#4a9aff"))
+            tvNewEvent.setBackgroundColor(if (hasFocus) Color.parseColor("#2a4a7a") else Color.TRANSPARENT)
+        }
+
+        tvOptions = findViewById(R.id.tvOptions)
+        tvOptions.setOnClickListener {
+            optionsLauncher.launch(Intent(this, OptionsActivity::class.java))
+        }
+        tvOptions.setOnFocusChangeListener { _, hasFocus ->
+            tvOptions.setTextColor(if (hasFocus) Color.WHITE else Color.parseColor("#AAAAAA"))
+            tvOptions.setBackgroundColor(if (hasFocus) Color.parseColor("#2a4a7a") else Color.TRANSPARENT)
+        }
+
+        // Ensure DPad can reach the New Event and Options buttons
+        tvNewEvent.isFocusable = true
+        tvNewEvent.isFocusableInTouchMode = true
+        tvOptions.isFocusable = true
+        tvOptions.isFocusableInTouchMode = true
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1001)
@@ -149,10 +170,6 @@ class MainActivity : AppCompatActivity() {
                 fetchCalendarEvents(accessToken)
             }
         }
-    }
-
-    private fun updateHolidayToggleText() {
-        tvHolidayToggle.text = if (showHolidays) "Holidays: ON" else "Holidays: OFF"
     }
 
     private fun updateTitle() {
@@ -231,8 +248,13 @@ class MainActivity : AppCompatActivity() {
             try {
                 val events = withContext(Dispatchers.IO) {
                     val calendars = getCalendarList(accessToken)
-                    val allEvents = mutableListOf<CalendarEvent>()
-                    val now = Calendar.getInstance()
+                    val eventsList = mutableListOf<CalendarEvent>()
+                    val now = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
                     val end = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 60) }
                     val timeMin = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
                         .apply { timeZone = TimeZone.getTimeZone("UTC") }
@@ -266,12 +288,20 @@ class MainActivity : AppCompatActivity() {
                             val start = item.optJSONObject("start")
                             val end2 = item.optJSONObject("end")
                             val isAllDay = start?.has("date") == true && start.has("date")
-                            val startStr = start?.optString("dateTime")
-                                ?: start?.optString("date") ?: ""
+                            val startStr = if (isAllDay) {
+                                start?.optString("date") ?: ""
+                            } else {
+                                start?.optString("dateTime") ?: ""
+                            }
+                            if (isAllDay) {
+                                android.util.Log.d("Flip2Cal", "AllDay start JSON: ${start.toString()}")
+                            }
                             val endStr = end2?.optString("dateTime")
                                 ?: end2?.optString("date") ?: ""
-                            val dateKey = if (isAllDay) startStr
-                            else startStr.substring(0, 10)
+                            val dateKey = if (isAllDay) startStr else if (startStr.length >= 10) startStr.substring(0, 10) else ""
+
+                            android.util.Log.d("Flip2Cal", "Event: $summary dateKey: $dateKey startStr: $startStr isAllDay: $isAllDay")
+
                             val startFormatted = formatTime(startStr, isAllDay)
                             val endFormatted = formatTime(endStr, isAllDay)
                             val eventId = item.optString("id", "")
@@ -279,7 +309,7 @@ class MainActivity : AppCompatActivity() {
                             val location = item.optString("location", "")
                             val description = item.optString("description", "")
 
-                            allEvents.add(
+                            eventsList.add(
                                 CalendarEvent(
                                     title = summary,
                                     startTime = startFormatted,
@@ -299,10 +329,11 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
                     }
-                    allEvents.sortedWith(compareBy { it.dateKey })
+                    eventsList.sortedWith(compareBy { it.dateKey })
                 }
-                android.util.Log.d("Flip2Cal", "Total events fetched: ${allEvents.size}")
-                allEvents = events
+                android.util.Log.d("Flip2Cal", "Total events fetched: ${events.size}")
+                allEvents.clear()
+                allEvents.addAll(events)
                 tvStatus.visibility = View.GONE
                 renderEvents()
 
@@ -399,8 +430,21 @@ private fun getCalendarList(accessToken: String): List<CalendarInfo> {
     }
 
     private fun renderEvents() {
-        val filtered = if (showHolidays) allEvents
-        else allEvents.filter { !it.isHoliday }
+        val showHolidays = prefs.getBoolean(OptionsActivity.KEY_SHOW_HOLIDAYS, false)
+        val hideFuture = prefs.getBoolean(OptionsActivity.KEY_HIDE_FUTURE, false)
+        val daysAhead = prefs.getInt(OptionsActivity.KEY_DAYS_AHEAD, OptionsActivity.DEFAULT_DAYS_AHEAD)
+
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val todayKey = sdf.format(Date())
+        val cutoffDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, daysAhead) }
+        val cutoffKey = sdf.format(cutoffDate.time)
+
+        val filtered = allEvents.filter { event ->
+            if (!showHolidays && event.isHoliday) return@filter false
+            if (hideFuture && event.dateKey > todayKey) return@filter false
+            if (event.dateKey > cutoffKey) return@filter false
+            true
+        }
 
         val items = mutableListOf<ListItem>()
         var lastDate = ""
@@ -414,7 +458,7 @@ private fun getCalendarList(accessToken: String): List<CalendarInfo> {
 
         if (items.isEmpty()) {
             tvStatus.visibility = View.VISIBLE
-            tvStatus.text = "No events in the next 30 days"
+            tvStatus.text = "No events in the next $daysAhead days"
         }
 
         listView.adapter = object : ArrayAdapter<ListItem>(this, 0, items) {
@@ -532,6 +576,12 @@ private fun getCalendarList(accessToken: String): List<CalendarInfo> {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+            if (listView.selectedItemPosition <= 0) {
+                tvNewEvent.requestFocus()
+                return true
+            }
+        }
         if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
             val pos = listView.selectedItemPosition
             if (pos >= 0) {

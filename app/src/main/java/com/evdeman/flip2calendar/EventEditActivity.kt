@@ -144,6 +144,7 @@ class EventEditActivity : AppCompatActivity() {
         recurringBanner = findViewById(R.id.recurringBanner)
         etLocation = findViewById(R.id.etLocation)
         etDescription = findViewById(R.id.etDescription)
+        etTitle.requestFocus()
 
         isNew = intent.getBooleanExtra(EXTRA_IS_NEW, true)
         isRecurring = intent.getBooleanExtra(EXTRA_IS_RECURRING, false)

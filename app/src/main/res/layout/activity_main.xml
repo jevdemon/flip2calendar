@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -11,30 +12,21 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="8dp"
-        android:background="#111111">
+        android:background="#111111"
+        android:focusable="false">
 
         <TextView
             android:id="@+id/tvTitle"
-            android:maxLines="2"
-            android:singleLine="false"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Calendar"
             android:textColor="#FFFFFF"
             android:textSize="22sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvHolidayToggle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Holidays: ON"
-            android:textColor="#AAAAAA"
-            android:textSize="16sp"
-            android:paddingStart="8dp"
-            android:focusable="true"
-            android:clickable="true" />
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:singleLine="false"
+            tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/tvNewEvent"
@@ -44,6 +36,17 @@
             android:textColor="#4a9aff"
             android:textSize="16sp"
             android:paddingStart="8dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:nextFocusDown="@id/listView"/>
+        <TextView
+            android:id="@+id/tvOptions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⋮"
+            android:textColor="#AAAAAA"
+            android:textSize="22sp"
+            android:paddingStart="12dp"
             android:focusable="true"
             android:clickable="true" />
 
@@ -68,8 +71,9 @@
         android:dividerHeight="1dp"
         android:scrollbars="vertical"
         android:focusable="true"
+        android:focusableInTouchMode="true"
         android:drawSelectorOnTop="false"
         android:listSelector="@drawable/list_item_selector"
-        android:focusableInTouchMode="true" />
+        android:nextFocusUp="@id/tvNewEvent"/>
 
 </LinearLayout>
