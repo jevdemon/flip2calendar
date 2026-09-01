@@ -1,4 +1,5 @@
 package com.evdeman.flip2calendar
+
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -20,12 +21,50 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 
+// --- HTTP helpers -----------------------------------------------------
+// Centralizes connection handling so every caller gets:
+//   1) a guaranteed conn.disconnect() (success or failure)
+//   2) the real response body on error (conn.errorStream), not just a
+//      generic IOException message
+//   3) a typed HttpException carrying the real status code, so callers
+//      can check `e.code == 401` instead of string-matching e.message
+
+private class HttpException(val code: Int, val body: String) : Exception("HTTP $code: $body")
+
+private fun HttpURLConnection.readResponseOrThrow(): String {
+    try {
+        val code = responseCode
+        val stream = if (code in 200..299) inputStream else errorStream
+        val text = stream?.bufferedReader()?.use { it.readText() } ?: ""
+        if (code !in 200..299) throw HttpException(code, text)
+        return text
+    } finally {
+        disconnect()
+    }
+}
+
+private fun httpGet(url: URL, accessToken: String): String {
+    val conn = url.openConnection() as HttpURLConnection
+    conn.setRequestProperty("Authorization", "Bearer $accessToken")
+    return conn.readResponseOrThrow()
+}
+
+private fun httpPostForm(url: URL, body: String): String {
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "POST"
+    conn.doOutput = true
+    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+    conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+    return conn.readResponseOrThrow()
+}
+
 data class CalendarInfo(
     val id: String,
     val name: String,
     val color: Int,
     val isReadOnly: Boolean
 )
+
 data class CalendarEvent(
     val title: String,
     val startTime: String,
@@ -49,7 +88,6 @@ sealed class ListItem {
 }
 
 class MainActivity : AppCompatActivity() {
-
     companion object {
         const val REDIRECT_URI = "http://localhost"
         const val SCOPE = "https://www.googleapis.com/auth/calendar"
@@ -79,6 +117,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prefs: SharedPreferences
     private lateinit var tvNewEvent: TextView
     private lateinit var tvOptions: TextView
+
     private val optionsLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -89,11 +128,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
     private var allEvents = mutableListOf<CalendarEvent>()
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         // Redirect to setup if credentials not configured
         val storedClientId = getClientId(this)
         if (storedClientId.isEmpty()) {
@@ -101,13 +142,13 @@ class MainActivity : AppCompatActivity() {
             finish()
             return
         }
+
         setContentView(R.layout.activity_main)
         listView = findViewById(R.id.listView)
         listView.itemsCanFocus = false
         listView.choiceMode = ListView.CHOICE_MODE_SINGLE
         tvStatus = findViewById(R.id.tvStatus)
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
         updateTitle()
 
         tvNewEvent = findViewById(R.id.tvNewEvent)
@@ -209,22 +250,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun exchangeCodeForToken(code: String) {
         tvStatus.text = "Authenticating..."
-
         scope.launch {
             try {
                 val token = withContext(Dispatchers.IO) {
-                    val url = URL("https://oauth2.googleapis.com/token")
-                    val conn = url.openConnection() as HttpURLConnection
-                    conn.requestMethod = "POST"
-                    conn.doOutput = true
-                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-                    val body = "code=$code" +
-                            "&client_id=${getClientId(this@MainActivity)}" +
-                            "&client_secret=${getClientSecret(this@MainActivity)}" +
+                    val body = "code=${Uri.encode(code)}" +
+                            "&client_id=${Uri.encode(getClientId(this@MainActivity))}" +
+                            "&client_secret=${Uri.encode(getClientSecret(this@MainActivity))}" +
                             "&redirect_uri=${Uri.encode(REDIRECT_URI)}" +
                             "&grant_type=authorization_code"
-                    conn.outputStream.write(body.toByteArray())
-                    val response = conn.inputStream.bufferedReader().readText()
+                    val response = httpPostForm(URL("https://oauth2.googleapis.com/token"), body)
                     JSONObject(response)
                 }
                 val accessToken = token.getString("access_token")
@@ -270,63 +304,71 @@ class MainActivity : AppCompatActivity() {
                         val isReadOnly = calendar.isReadOnly
                         val isHoliday = calName.contains("Holiday", ignoreCase = true)
 
-                        val eventsUrl = URL(
-                            "https://www.googleapis.com/calendar/v3/calendars/" +
-                                    "${Uri.encode(calId)}/events" +
-                                    "?timeMin=$timeMin&timeMax=$timeMax" +
-                                    "&singleEvents=true&orderBy=startTime&maxResults=300"
-                        )
-                        val conn = eventsUrl.openConnection() as HttpURLConnection
-                        conn.setRequestProperty("Authorization", "Bearer $accessToken")
-                        val response = conn.inputStream.bufferedReader().readText()
-                        val json = JSONObject(response)
-                        val items = json.optJSONArray("items") ?: continue
-
-                        for (i in 0 until items.length()) {
-                            val item = items.getJSONObject(i)
-                            val summary = item.optString("summary", "(No title)")
-                            val start = item.optJSONObject("start")
-                            val end2 = item.optJSONObject("end")
-                            val isAllDay = start?.has("date") == true && start.has("date")
-                            val startStr = if (isAllDay) {
-                                start?.optString("date") ?: ""
-                            } else {
-                                start?.optString("dateTime") ?: ""
-                            }
-                            if (isAllDay) {
-                                android.util.Log.d("Flip2Cal", "AllDay start JSON: ${start.toString()}")
-                            }
-                            val endStr = end2?.optString("dateTime")
-                                ?: end2?.optString("date") ?: ""
-                            val dateKey = if (isAllDay) startStr else if (startStr.length >= 10) startStr.substring(0, 10) else ""
-
-                            android.util.Log.d("Flip2Cal", "Event: $summary dateKey: $dateKey startStr: $startStr isAllDay: $isAllDay")
-
-                            val startFormatted = formatTime(startStr, isAllDay)
-                            val endFormatted = formatTime(endStr, isAllDay)
-                            val eventId = item.optString("id", "")
-                            val isRecurring = item.has("recurringEventId") || item.has("recurrence")
-                            val location = item.optString("location", "")
-                            val description = item.optString("description", "")
-
-                            eventsList.add(
-                                CalendarEvent(
-                                    title = summary,
-                                    startTime = startFormatted,
-                                    endTime = endFormatted,
-                                    isAllDay = isAllDay,
-                                    calendarName = calName,
-                                    calendarColor = calColor,
-                                    isHoliday = isHoliday,
-                                    dateKey = dateKey,
-                                    eventId = eventId,
-                                    calendarId = calId,
-                                    isRecurring = isRecurring,
-                                    location = location,
-                                    description = description,
-                                    isReadOnly = isReadOnly
-                                )
+                        // Per-calendar try/catch: one bad/inaccessible calendar
+                        // should not blank out every other calendar's events.
+                        // A 401 is the exception - that means the *token* is
+                        // bad, not just this calendar, so it's rethrown to be
+                        // handled by the outer catch (which triggers refresh).
+                        try {
+                            val eventsUrl = URL(
+                                "https://www.googleapis.com/calendar/v3/calendars/" +
+                                        "${Uri.encode(calId)}/events" +
+                                        "?timeMin=$timeMin&timeMax=$timeMax" +
+                                        "&singleEvents=true&orderBy=startTime&maxResults=300"
                             )
+                            val response = httpGet(eventsUrl, accessToken)
+                            val json = JSONObject(response)
+                            val items = json.optJSONArray("items") ?: continue
+                            for (i in 0 until items.length()) {
+                                val item = items.getJSONObject(i)
+                                val summary = item.optString("summary", "(No title)")
+                                val start = item.optJSONObject("start")
+                                val end2 = item.optJSONObject("end")
+                                // All-day events carry a "date" field instead of
+                                // "dateTime" - this used to be checked twice
+                                // (start?.has("date") == true && start.has("date")),
+                                // which is redundant and not the same as verifying
+                                // it's NOT a timed event.
+                                val isAllDay = start?.has("date") == true
+                                val startStr = if (isAllDay) {
+                                    start?.optString("date") ?: ""
+                                } else {
+                                    start?.optString("dateTime") ?: ""
+                                }
+                                val endStr = end2?.optString("dateTime")
+                                    ?: end2?.optString("date") ?: ""
+                                val dateKey = if (isAllDay) startStr else if (startStr.length >= 10) startStr.substring(0, 10) else ""
+                                android.util.Log.d("Flip2Cal", "Event: $summary dateKey: $dateKey startStr: $startStr isAllDay: $isAllDay")
+                                val startFormatted = formatTime(startStr, isAllDay)
+                                val endFormatted = formatTime(endStr, isAllDay)
+                                val eventId = item.optString("id", "")
+                                val isRecurring = item.has("recurringEventId") || item.has("recurrence")
+                                val location = item.optString("location", "")
+                                val description = item.optString("description", "")
+                                eventsList.add(
+                                    CalendarEvent(
+                                        title = summary,
+                                        startTime = startFormatted,
+                                        endTime = endFormatted,
+                                        isAllDay = isAllDay,
+                                        calendarName = calName,
+                                        calendarColor = calColor,
+                                        isHoliday = isHoliday,
+                                        dateKey = dateKey,
+                                        eventId = eventId,
+                                        calendarId = calId,
+                                        isRecurring = isRecurring,
+                                        location = location,
+                                        description = description,
+                                        isReadOnly = isReadOnly
+                                    )
+                                )
+                            }
+                        } catch (e: HttpException) {
+                            if (e.code == 401) throw e
+                            android.util.Log.d("Flip2Cal", "Skipping calendar '$calName' (HTTP ${e.code}): ${e.body}")
+                        } catch (e: Exception) {
+                            android.util.Log.d("Flip2Cal", "Skipping calendar '$calName': ${e.message}")
                         }
                     }
                     eventsList.sortedWith(compareBy { it.dateKey })
@@ -346,7 +388,10 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 android.util.Log.d("Flip2Cal", "Fetch error: ${e.message}")
-                if (e.message?.contains("401") == true) {
+                // Check the real HTTP status code instead of string-matching
+                // e.message for "401" - IOException text isn't guaranteed to
+                // contain the status code.
+                if (e is HttpException && e.code == 401) {
                     refreshToken()
                 } else {
                     tvStatus.text = "Error: ${e.message}"
@@ -356,7 +401,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshToken() {
-        val refreshToken = prefs.getString(KEY_REFRESH_TOKEN, null) ?: run {
+        val refreshTokenValue = prefs.getString(KEY_REFRESH_TOKEN, null) ?: run {
             prefs.edit().remove(KEY_ACCESS_TOKEN).apply()
             startOAuth()
             return
@@ -364,17 +409,11 @@ class MainActivity : AppCompatActivity() {
         scope.launch {
             try {
                 val token = withContext(Dispatchers.IO) {
-                    val url = URL("https://oauth2.googleapis.com/token")
-                    val conn = url.openConnection() as HttpURLConnection
-                    conn.requestMethod = "POST"
-                    conn.doOutput = true
-                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-                    val body = "refresh_token=$refreshToken" +
-                            "&client_id=${getClientId(this@MainActivity)}" +
-                            "&client_secret=${getClientSecret(this@MainActivity)}" +
+                    val body = "refresh_token=${Uri.encode(refreshTokenValue)}" +
+                            "&client_id=${Uri.encode(getClientId(this@MainActivity))}" +
+                            "&client_secret=${Uri.encode(getClientSecret(this@MainActivity))}" +
                             "&grant_type=refresh_token"
-                    conn.outputStream.write(body.toByteArray())
-                    val response = conn.inputStream.bufferedReader().readText()
+                    val response = httpPostForm(URL("https://oauth2.googleapis.com/token"), body)
                     JSONObject(response)
                 }
                 val newAccessToken = token.getString("access_token")
@@ -387,36 +426,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-private fun getCalendarList(accessToken: String): List<CalendarInfo> {
-    val url = URL("https://www.googleapis.com/calendar/v3/users/me/calendarList")
-    val conn = url.openConnection() as HttpURLConnection
-    conn.setRequestProperty("Authorization", "Bearer $accessToken")
-    val responseCode = conn.responseCode
-    if (responseCode == 401) {
-        throw Exception("401 Unauthorized")
-    }
-    if (responseCode !in 200..299) {
-        throw Exception("https://www.googleapis.com/calendar/v3/users/me/calendarList")
-    }
-    val response = conn.inputStream.bufferedReader().readText()
-    val json = JSONObject(response)
-    val items = json.optJSONArray("items") ?: return emptyList()
-    val result = mutableListOf<CalendarInfo>()
-    for (i in 0 until items.length()) {
-        val item = items.getJSONObject(i)
-        val id = item.getString("id")
-        val name = item.optString("summary", "Unknown")
-        val colorHex = item.optString("backgroundColor", "#4285F4")
-        val color = try {
-            Color.parseColor(colorHex)
-        } catch (e: Exception) {
-            Color.parseColor("#4285F4")
+    private fun getCalendarList(accessToken: String): List<CalendarInfo> {
+        val response = httpGet(
+            URL("https://www.googleapis.com/calendar/v3/users/me/calendarList"),
+            accessToken
+        )
+        val json = JSONObject(response)
+        val items = json.optJSONArray("items") ?: return emptyList()
+        val result = mutableListOf<CalendarInfo>()
+        for (i in 0 until items.length()) {
+            val item = items.getJSONObject(i)
+            val id = item.getString("id")
+            val name = item.optString("summary", "Unknown")
+            val colorHex = item.optString("backgroundColor", "#4285F4")
+            val color = try {
+                Color.parseColor(colorHex)
+            } catch (e: Exception) {
+                Color.parseColor("#4285F4")
+            }
+            // "reader" and "freeBusyReader" are both non-writable access
+            // roles - previously only "reader" was treated as read-only, so
+            // freeBusyReader calendars would appear editable and fail on save.
+            val accessRole = item.optString("accessRole", "")
+            val isReadOnly = accessRole == "reader" || accessRole == "freeBusyReader"
+            result.add(CalendarInfo(id, name, color, isReadOnly))
         }
-        val isReadOnly = item.optString("accessRole", "") == "reader"
-        result.add(CalendarInfo(id, name, color, isReadOnly))
+        return result
     }
-    return result
-}
 
     private fun formatTime(dateTimeStr: String, isAllDay: Boolean): String {
         if (isAllDay) return "All day"
@@ -433,19 +469,16 @@ private fun getCalendarList(accessToken: String): List<CalendarInfo> {
         val showHolidays = prefs.getBoolean(OptionsActivity.KEY_SHOW_HOLIDAYS, false)
         val hideFuture = prefs.getBoolean(OptionsActivity.KEY_HIDE_FUTURE, false)
         val daysAhead = prefs.getInt(OptionsActivity.KEY_DAYS_AHEAD, OptionsActivity.DEFAULT_DAYS_AHEAD)
-
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val todayKey = sdf.format(Date())
         val cutoffDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, daysAhead) }
         val cutoffKey = sdf.format(cutoffDate.time)
-
         val filtered = allEvents.filter { event ->
             if (!showHolidays && event.isHoliday) return@filter false
             if (hideFuture && event.dateKey > todayKey) return@filter false
             if (event.dateKey > cutoffKey) return@filter false
             true
         }
-
         val items = mutableListOf<ListItem>()
         var lastDate = ""
         for (event in filtered) {
@@ -455,12 +488,10 @@ private fun getCalendarList(accessToken: String): List<CalendarInfo> {
             }
             items.add(ListItem.Event(event))
         }
-
         if (items.isEmpty()) {
             tvStatus.visibility = View.VISIBLE
             tvStatus.text = "No events in the next $daysAhead days"
         }
-
         listView.adapter = object : ArrayAdapter<ListItem>(this, 0, items) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 return when (val item = items[position]) {
@@ -481,30 +512,25 @@ private fun getCalendarList(accessToken: String): List<CalendarInfo> {
                         container.setPadding(16, 12, 16, 12)
                         container.isFocusable = false
                         container.isClickable = false
-
                         val colorBar = View(context)
                         val params = android.widget.LinearLayout.LayoutParams(6, ViewGroup.LayoutParams.MATCH_PARENT)
                         params.marginEnd = 12
                         colorBar.layoutParams = params
                         colorBar.setBackgroundColor(item.event.calendarColor)
-
                         val textLayout = android.widget.LinearLayout(context)
                         textLayout.orientation = android.widget.LinearLayout.VERTICAL
                         textLayout.isFocusable = false
-
                         val tvTitle = TextView(context)
                         tvTitle.text = item.event.title
                         tvTitle.setTextColor(Color.WHITE)
                         tvTitle.textSize = 18f
                         tvTitle.isFocusable = false
-
                         val tvTime = TextView(context)
                         tvTime.text = if (item.event.isAllDay) "All day"
                         else "${item.event.startTime} – ${item.event.endTime}"
                         tvTime.setTextColor(Color.parseColor("#AAAAAA"))
                         tvTime.textSize = 16f
                         tvTime.isFocusable = false
-
                         textLayout.addView(tvTitle)
                         textLayout.addView(tvTime)
                         container.addView(colorBar)
@@ -526,14 +552,12 @@ private fun getCalendarList(accessToken: String): List<CalendarInfo> {
         }
 
         var selectedPosition = -1
-
         listView.setOnItemClickListener { _, _, position, _ ->
             val item = items[position]
             if (item is ListItem.Event) {
                 showEventDetail(item.event)
             }
         }
-
         listView.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, position: Int, id: Long) {
                 // Unhighlight previous
