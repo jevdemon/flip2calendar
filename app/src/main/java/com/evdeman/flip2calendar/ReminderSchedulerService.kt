@@ -127,7 +127,7 @@ class ReminderSchedulerService : Service() {
 
                         val alarmIntent = Intent(this, ReminderReceiver::class.java).apply {
                             putExtra(ReminderReceiver.EXTRA_TITLE, summary)
-                            putExtra(ReminderReceiver.EXTRA_MESSAGE, "$message • $calName")
+                            putExtra(ReminderReceiver.EXTRA_MESSAGE, "$summary • $message • $calName")
                             putExtra(ReminderReceiver.EXTRA_NOTIFICATION_ID, notificationId)
                         }
 
