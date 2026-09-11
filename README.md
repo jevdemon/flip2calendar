@@ -1,12 +1,12 @@
 # Flip2Calendar
 
-A native Android calendar app built for a jailbroken **TCL Flip 2** running AOSP 11. 
+A native Android calendar app originally built for a jailbroken **TCL Flip 2** running AOSP 11. 
 <br/>Syncs with Google Calendar via the REST API — no Google Play Services required, no WebView dependency, fully D-pad navigable.
-<br/>This app should work fine on other flip phones as long as they are jailbroken and running AOSP 11. 
+<br/>This app should work fine on other flip phones as long as they are jailbroken and running at least Android 10. 
 <br/>NOTE This app will not work on flip phones running KaiOS.
 
 You can get the app (APK) here: https://github.com/jevdemon/flip2calendar/releases/tag/v1.1
-<br/>Version 1.2 fixes a notification bug for older phones like the ZTE Cymbal 2. This release also renames the app to FlipCalendar because  I noticed people are starting to use the app on flip phones other than a TCL Flip 2. Lastly, this release lowers the minSdk to 30 in Flip2Calendar\app\build.gradle.kts, enabling the app to be installed and used on flip phones running an older version of Android (v10).
+<br/>Version 1.2 fixes a notification bug for older phones like the ZTE Cymbal 2. This release also renames the app to FlipCalendar because  I noticed people are starting to use the app on flip phones other than a TCL Flip 2. Lastly, this release lowers the minSdk to 29 in Flip2Calendar\app\build.gradle.kts, enabling the app to be installed and used on flip phones running an older version of Android (v10).
 
 Before using the app you’ll need to setup Google OAuth for your account – follow the instructions here: https://github.com/jevdemon/flip2calendar/blob/main/README.md#google-oauth-setup-required
 
