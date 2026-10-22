@@ -77,6 +77,22 @@ See the [Build from Source](#build-from-source) section below.
 
 ## Google OAuth Setup (Required)
 
+NOTE:  Google updated their OAuth consent screen setup since I built this. Google now requires you to complete a Branding page before you can publish the app. If you run into an error publishing because of a Branding Page try this:
+
+    Go to the Branding Page linked in the error
+
+    Fill in the required fields:
+
+        App name (e.g. “MyCalendar”)
+
+        User support email (your email)
+
+        Developer contact email (your email)
+
+    Save the branding page
+
+    Go back to the Audience page and try Publish App again
+
 Every user needs their own Google OAuth credentials. This is a one-time setup and takes about 5 minutes. The app's setup screen will guide you through it.
 
 ### Step 1 — Create a Google Cloud project
