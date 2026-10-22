@@ -60,10 +60,10 @@ Optionally show Holidays:<br/>
 
 ### Option A — Install the APK directly
 
-1. Download `flip2calendar-v1.0.apk` from the [latest release](https://github.com/jevdemon/flip2calendar/releases/latest)
-2. Install via ADB:
+1. Download the APK from the [latest release](https://github.com/jevdemon/flip2calendar/releases/latest)
+2. Install via ADB (the APK name in the example below may differ from the latest APK release name):
 ```bash
-adb install flip2calendar-v1.0.apk
+adb install flipcalendar-v1.2.apk
 ```
 Or enable **Install from unknown sources** on your device and open the APK directly.
 
