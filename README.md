@@ -16,7 +16,7 @@ NOTE: If you need to jailbreak your TCL FLip 2 I suggest consulting one of the m
 
 Most calendar apps on Android require Google Play Services or an up-to-date WebView. The TCL Flip 2 runs stripped AOSP 11 (32-bit) with neither. This app was built from scratch to fill that gap.
 
-It should also work on any de-Googled Android device running API 30+.
+It should also work on any de-Googled Android device running API 29+.
 
 ## Features
 
